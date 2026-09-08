@@ -55,7 +55,10 @@ impl Action {
     /// of what "valid" means.
     pub fn is_valid(&self) -> bool {
         if self.method == "GET" {
-            return !self.params.iter().any(|p| p.location == ParamLocation::Body);
+            return !self
+                .params
+                .iter()
+                .any(|p| p.location == ParamLocation::Body);
         }
         true
     }
@@ -171,7 +174,13 @@ mod tests {
         },
     ];
 
-    fn dispatch(app: &mut FakeApp, name: &str, _path: Option<&str>, _query: &str, _body: &str) -> serde_json::Value {
+    fn dispatch(
+        app: &mut FakeApp,
+        name: &str,
+        _path: Option<&str>,
+        _query: &str,
+        _body: &str,
+    ) -> serde_json::Value {
         match name {
             "ping" => {
                 app.called = Some("ping");

@@ -40,7 +40,11 @@ pub struct AgenticServer<T> {
 
 impl<T: 'static> AgenticServer<T> {
     pub fn new(app_name: &'static str, port: u16) -> Self {
-        Self { app_name, port, modules: Vec::new() }
+        Self {
+            app_name,
+            port,
+            modules: Vec::new(),
+        }
     }
 
     /// Registers one module, panicking in debug builds if its `prefix`
@@ -122,16 +126,25 @@ impl<T: 'static> AgenticServer<T> {
             return None;
         }
         for module in modules {
-            let Some(rest) = path.strip_prefix('/').and_then(|p| p.strip_prefix(module.prefix)) else {
+            let Some(rest) = path
+                .strip_prefix('/')
+                .and_then(|p| p.strip_prefix(module.prefix))
+            else {
                 continue;
             };
-            let Some(rest) = rest.strip_prefix('/') else { continue };
+            let Some(rest) = rest.strip_prefix('/') else {
+                continue;
+            };
             for action in module.actions {
                 if action.method != method {
                     continue;
                 }
                 let action_path = action.path.strip_prefix('/').unwrap_or(action.path);
-                let template_prefix = action_path.split('{').next().unwrap_or(action_path).trim_end_matches('/');
+                let template_prefix = action_path
+                    .split('{')
+                    .next()
+                    .unwrap_or(action_path)
+                    .trim_end_matches('/');
                 let has_placeholder = action_path.contains('{');
                 let matched = if has_placeholder {
                     rest.strip_prefix(template_prefix)
@@ -143,7 +156,11 @@ impl<T: 'static> AgenticServer<T> {
                     None
                 };
                 let Some(param_value) = matched else { continue };
-                let path_param = if has_placeholder { Some(param_value.to_string()) } else { None };
+                let path_param = if has_placeholder {
+                    Some(param_value.to_string())
+                } else {
+                    None
+                };
                 // `reply` is a throwaway placeholder here -- `route` only
                 // resolves *which* action and its params; `spawn`'s own
                 // loop (Step 3) replaces this with the real one-shot
@@ -195,7 +212,10 @@ impl<T: 'static> AgenticServer<T> {
         let server = match tiny_http::Server::http(("127.0.0.1", self.port)) {
             Ok(server) => server,
             Err(e) => {
-                eprintln!("gpui-agentic-http: could not bind 127.0.0.1:{}: {e}", self.port);
+                eprintln!(
+                    "gpui-agentic-http: could not bind 127.0.0.1:{}: {e}",
+                    self.port
+                );
                 return None;
             }
         };
@@ -207,20 +227,27 @@ impl<T: 'static> AgenticServer<T> {
             for mut request in server.incoming_requests() {
                 let method = request.method().as_str().to_string();
                 let full_path = request.url().to_string();
-                let (path, query) = full_path.split_once('?').unwrap_or((full_path.as_str(), ""));
+                let (path, query) = full_path
+                    .split_once('?')
+                    .unwrap_or((full_path.as_str(), ""));
                 let mut request_body = String::new();
                 let _ = request.as_reader().read_to_string(&mut request_body);
 
                 if method == "GET" && path == "/" {
-                    let response = tiny_http::Response::from_string(capabilities.to_string()).with_header(
-                        tiny_http::Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..])
+                    let response = tiny_http::Response::from_string(capabilities.to_string())
+                        .with_header(
+                            tiny_http::Header::from_bytes(
+                                &b"Content-Type"[..],
+                                &b"application/json"[..],
+                            )
                             .expect("static header name and value are always valid"),
-                    );
+                        );
                     let _ = request.respond(response);
                     continue;
                 }
 
-                let Some(call) = Self::route_over(&modules, &method, path, query, &request_body) else {
+                let Some(call) = Self::route_over(&modules, &method, path, query, &request_body)
+                else {
                     let _ = request.respond(
                         tiny_http::Response::from_string("not found").with_status_code(404),
                     );
@@ -345,18 +372,35 @@ mod routing_tests {
     #[derive(Default)]
     struct FakeApp;
 
-    fn dispatch(_app: &mut FakeApp, name: &str, _p: Option<&str>, _q: &str, _b: &str) -> serde_json::Value {
+    fn dispatch(
+        _app: &mut FakeApp,
+        name: &str,
+        _p: Option<&str>,
+        _q: &str,
+        _b: &str,
+    ) -> serde_json::Value {
         serde_json::json!({"called": name})
     }
 
     const ACTIONS: &[Action] = &[
-        Action { name: "state", method: "GET", path: "/state", description: "d", params: &[] },
+        Action {
+            name: "state",
+            method: "GET",
+            path: "/state",
+            description: "d",
+            params: &[],
+        },
         Action {
             name: "select_vehicle",
             method: "POST",
             path: "/select-vehicle/{id}",
             description: "d",
-            params: &[Param { name: "id", kind: "integer", location: ParamLocation::Path, description: "d" }],
+            params: &[Param {
+                name: "id",
+                kind: "integer",
+                location: ParamLocation::Path,
+                description: "d",
+            }],
         },
     ];
 
@@ -370,13 +414,17 @@ mod routing_tests {
 
     #[test]
     fn a_prefixed_flat_action_routes() {
-        let call = server().route("GET", "/fleet/state", "", "").expect("must route");
+        let call = server()
+            .route("GET", "/fleet/state", "", "")
+            .expect("must route");
         assert_eq!(call.action_name, "state");
     }
 
     #[test]
     fn a_prefixed_path_param_action_routes_and_carries_the_param() {
-        let call = server().route("POST", "/fleet/select-vehicle/42", "", "").expect("must route");
+        let call = server()
+            .route("POST", "/fleet/select-vehicle/42", "", "")
+            .expect("must route");
         assert_eq!(call.action_name, "select_vehicle");
         assert_eq!(call.path_param.as_deref(), Some("42"));
     }
