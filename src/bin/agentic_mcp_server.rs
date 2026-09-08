@@ -74,13 +74,18 @@ fn app_request(method: &str, path: &str, body: &str) -> Result<Value, String> {
     serde_json::from_str(response_body).map_err(|e| format!("bad JSON response: {e}"))
 }
 
-/// `Param::kind` is a free-form string today ("string"/"integer"), not an
-/// enum -- this is the one place that vocabulary has to agree with JSON
-/// Schema's own, so an unrecognised kind falls back to "string" rather than
-/// producing an invalid schema.
+/// `Param::kind` is a free-form string today ("string"/"integer"/"array"),
+/// not an enum -- this is the one place that vocabulary has to agree with
+/// JSON Schema's own, so an unrecognised kind falls back to "string" rather
+/// than producing an invalid schema. A real consumer (exchanger, whose
+/// `paths` array-param action worked end to end over HTTP but would have
+/// failed a strict MCP client's own schema validation, since "array" fell
+/// through to "string" here) is what caught `"array"` missing from this
+/// list -- add any further JSON Schema primitive a real `Param::kind`
+/// starts using, the same way.
 fn json_schema_type(kind: &str) -> &str {
     match kind {
-        "string" | "integer" | "boolean" | "number" => kind,
+        "string" | "integer" | "boolean" | "number" | "array" | "object" => kind,
         _ => "string",
     }
 }
@@ -338,6 +343,23 @@ mod tests {
         assert_eq!(json_schema_type("frobnicate"), "string");
     }
 
+    /// Regression test: an array-kind param (e.g. exchanger's
+    /// `POST /transfers`' `paths`) advertised its `inputSchema` type as
+    /// "string" until this was caught by a real consumer -- the array
+    /// still forwarded correctly over HTTP either way (`build_request`
+    /// never consulted `kind`), so this only mattered to a strict MCP
+    /// client validating arguments against the advertised schema before
+    /// sending, not to the wire behavior itself.
+    #[test]
+    fn an_array_kind_is_advertised_as_an_array_not_a_string() {
+        assert_eq!(json_schema_type("array"), "array");
+    }
+
+    #[test]
+    fn an_object_kind_is_advertised_as_an_object_not_a_string() {
+        assert_eq!(json_schema_type("object"), "object");
+    }
+
     fn sample_action() -> Value {
         json!({
             "name": "assign_bookings",
@@ -347,7 +369,7 @@ mod tests {
             "params": [
                 {"name": "vehicle_id", "kind": "integer", "location": "path", "description": "which vehicle"},
                 {"name": "verbose", "kind": "boolean", "location": "query", "description": "extra detail"},
-                {"name": "booking_uids", "kind": "string", "location": "body", "description": "which bookings"},
+                {"name": "booking_uids", "kind": "array", "location": "body", "description": "which bookings"},
             ],
         })
     }
@@ -364,7 +386,7 @@ mod tests {
         assert_eq!(props.len(), 3);
         assert_eq!(props["vehicle_id"]["type"], "integer");
         assert_eq!(props["verbose"]["type"], "boolean");
-        assert_eq!(props["booking_uids"]["type"], "string");
+        assert_eq!(props["booking_uids"]["type"], "array");
         let required = tool["inputSchema"]["required"].as_array().unwrap();
         assert_eq!(required.len(), 3);
     }
