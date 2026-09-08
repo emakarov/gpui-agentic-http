@@ -22,29 +22,47 @@ in that repo for the full design history.
   app).
 - A registry-drift-test helper: fails a test, not a silent 404, when an
   action is documented but not routed or the reverse.
-- `scripts/agentic_mcp_server.py`: an MCP server over stdio that turns
-  `GET /`'s own live registry into MCP tools -- no hardcoded tool list on
-  the Python side, ever.
+- `src/bin/agentic_mcp_server.rs`: an MCP server over stdio that turns
+  `GET /`'s own live registry into MCP tools -- no hardcoded tool list,
+  ever. (An earlier Python prototype did the same job; rewritten in Rust
+  so a Rust consumer never has to shell out to a second language runtime
+  just to talk to itself.)
 - `skills/agentic-app/SKILL.md`: a bootstrap Claude Code skill. Its entire
   content is "scan the shared port range, `GET /` what you find, use what
   it says" -- never a hardcoded action list.
 
 ## What ships in this repo
 
-- `src/`: the Rust crate (`Action`/`Param`/`ParamLocation`,
+- `src/`: the Rust library crate (`Action`/`Param`/`ParamLocation`,
   `ModuleRegistration<T>`, `AgenticServer<T>`, the registry-drift-test
-  helper).
-- `scripts/agentic_mcp_server.py`: the MCP bridge. See
-  `.mcp.json.example` for how a consumer wires it in.
+  helper) plus `src/bin/agentic_mcp_server.rs`, a second binary target in
+  the same crate -- the MCP bridge. `cargo build --release` produces both;
+  see `.mcp.json.example` for how a consumer wires the binary in.
 - `skills/agentic-app/SKILL.md`: the bootstrap Claude Code skill. Copy or
   symlink into a consuming project's own `.claude/skills/agentic-app/`.
 
 ## Using it
 
-Add as a path dependency during development:
+Add as a dependency:
 
 ```toml
-gpui-agentic-http = { path = "../../../gpui-agentic-http" }
+gpui-agentic-http = { git = "https://github.com/emakarov/gpui-agentic-http", rev = "<commit>" }
+```
+
+or, during local development on this crate itself, as a path dependency
+(must be an **absolute** path -- a relative one breaks as soon as a
+consumer is checked out at a different depth, e.g. a plain checkout vs. a
+`.claude/worktrees/*` worktree):
+
+```toml
+gpui-agentic-http = { path = "/absolute/path/to/gpui-agentic-http" }
 ```
 
 See sgerp-admin's own `agentic_http.rs` for a complete, real consumer.
+
+**Gotcha:** an `Action`'s own `path` must NOT repeat its module's
+`prefix` -- `AgenticServer` prepends the prefix itself when routing and
+when building `GET /`'s response. A module registered with
+`prefix: "map"` declares `path: "/state"`, not `path: "/map/state"`; the
+latter double-prefixes to `/map/map/state` and only becomes obvious once
+you read the routing code that builds it.
