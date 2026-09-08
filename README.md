@@ -29,6 +29,16 @@ in that repo for the full design history.
   content is "scan the shared port range, `GET /` what you find, use what
   it says" -- never a hardcoded action list.
 
+## What ships in this repo
+
+- `src/`: the Rust crate (`Action`/`Param`/`ParamLocation`,
+  `ModuleRegistration<T>`, `AgenticServer<T>`, the registry-drift-test
+  helper).
+- `scripts/agentic_mcp_server.py`: the MCP bridge. See
+  `.mcp.json.example` for how a consumer wires it in.
+- `skills/agentic-app/SKILL.md`: the bootstrap Claude Code skill. Copy or
+  symlink into a consuming project's own `.claude/skills/agentic-app/`.
+
 ## Using it
 
 Add as a path dependency during development:
