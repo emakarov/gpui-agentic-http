@@ -2,3 +2,7 @@
 //! inspecting a gpui app without a human at the keyboard. See this crate's
 //! own `README.md` for the full design rationale, ported from
 //! sgerp-admin's `debug_http.rs` (`~/dev/sgerp-rust`).
+
+mod registry;
+
+pub use registry::{assert_registry_routable, Action, ModuleRegistration, Param, ParamLocation};
