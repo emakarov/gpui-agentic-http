@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "agentic-app": {
+      "command": "python3",
+      "args": ["/absolute/path/to/gpui-agentic-http/scripts/agentic_mcp_server.py"],
+      "env": {
+        "AGENTIC_HTTP_PORT": "7330"
+      }
+    }
+  }
+}
