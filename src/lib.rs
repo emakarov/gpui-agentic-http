@@ -4,5 +4,7 @@
 //! sgerp-admin's `debug_http.rs` (`~/dev/sgerp-rust`).
 
 mod registry;
+mod server;
 
 pub use registry::{assert_registry_routable, Action, ModuleRegistration, Param, ParamLocation};
+pub use server::{parse_query_string, AgenticCall, AgenticServer};
