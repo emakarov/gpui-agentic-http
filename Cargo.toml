@@ -1,6 +1,7 @@
 [package]
 name = "gpui-agentic-http"
 version = "0.1.0"
+license = "MIT OR Apache-2.0"
 edition = "2021"
 description = "A local-only, self-describing HTTP surface for driving and inspecting a gpui app without a human at the keyboard -- registry, transport, and MCP/skill discovery, extracted from sgerp-admin's own debug_http.rs."
 
