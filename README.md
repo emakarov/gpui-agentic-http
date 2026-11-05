@@ -66,3 +66,10 @@ when building `GET /`'s response. A module registered with
 `prefix: "map"` declares `path: "/state"`, not `path: "/map/state"`; the
 latter double-prefixes to `/map/map/state` and only becomes obvious once
 you read the routing code that builds it.
+
+## Licence
+
+Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or
+[MIT license](LICENSE-MIT), at your option, the same licence as
+[SWAT Maps](https://github.com/swatmobility/swat-maps), which carries a copy
+of this crate.
