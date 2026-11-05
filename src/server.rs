@@ -1,9 +1,8 @@
 //! The transport: request routing across every registered
 //! [`ModuleRegistration`], real query-string parsing, and the
-//! `tiny_http` accept-loop/channel bridge -- ported near-verbatim from
-//! sgerp-admin's own `debug_http::spawn` (see that function's own doc
-//! comment in `~/dev/sgerp-rust/desktop/crates/admin/src/debug_http.rs`
-//! for the two hard-won, measured-bug fixes preserved here: the
+//! `tiny_http` accept-loop/channel bridge -- ported near-verbatim from a
+//! downstream gpui app's own `debug_http::spawn`, with the two hard-won,
+//! measured-bug fixes it carried preserved here: the
 //! channel-crossing pattern itself, and the forced-poll loop a consumer's
 //! own app entity still has to wire up -- see this file's own doc comment
 //! on [`AgenticServer::spawn`] for why that part cannot move into this
@@ -15,12 +14,11 @@ use crate::registry::ModuleRegistration;
 /// `debug_http.rs`'s own `DebugCall`, generalized over the app type `T`.
 ///
 /// **Carries the resolved `dispatch` function pointer, not just the
-/// parsed pieces.** `dispatch` needs `&mut T` (e.g. `&mut AdminApp`),
+/// parsed pieces.** `dispatch` needs `&mut T` (e.g. `&mut MyApp`),
 /// which only exists on the *consumer's* own foreground thread -- the
 /// HTTP accept-loop thread that does the routing never has one, so
 /// routing alone cannot call it, only identify which one an incoming
-/// request means. The consumer's own poll loop (the thing that used to be
-/// `AdminApp::sync_debug_http`, still is after Task 8) is what actually
+/// request means. The consumer's own poll loop is what actually
 /// calls `(call.dispatch)(app, ...)` once it has real `&mut T` in hand,
 /// then sends the JSON result down `call.reply`.
 pub struct AgenticCall<T> {
@@ -196,8 +194,7 @@ impl<T: 'static> AgenticServer<T> {
     /// 100ms) -- that fix is written in terms of `Window`/`Entity<Self>`
     /// types this crate has no dependency on `gpui` to name, so every
     /// consumer wires their own copy of that loop around the channel this
-    /// method returns, the same shape `AdminApp::new` already has today
-    /// (see sgerp-admin's own migration, Task 8 of this plan).
+    /// method returns, the same shape that app's root entity already has.
     ///
     /// **Borrow-checker note**: the accept-loop closure below must be
     /// `'static` (it runs on its own `std::thread::spawn`'d thread), so it
@@ -277,8 +274,8 @@ impl<T: 'static> AgenticServer<T> {
 }
 
 /// A `?name=value&name2=value2` query string to its decoded pairs --
-/// **new functionality, not connective tissue**: neither sgerp-admin's 26
-/// actions nor clickpad's pass-1 implementation had a compliant
+/// **new functionality, not connective tissue**: neither of the two
+/// apps it was extracted from had a compliant
 /// parameterized `GET` before this crate existed (see the design spec's
 /// own "What ships with the crate" section), so nothing already exercises
 /// this. No external crate: the format is simple enough that pulling in
@@ -297,7 +294,7 @@ pub fn parse_query_string(query: &str) -> Vec<(String, String)> {
 
 /// The one escaping query strings actually need for this crate's own
 /// params (plain identifiers, numbers, short search terms) -- `%XX` and
-/// `+` for space, vrptoolbox/urlencode's own minimal convention. Not a
+/// `+` for space, the minimal convention of a urlencode helper. Not a
 /// general-purpose decoder; a malformed `%` sequence is passed through
 /// literally rather than erroring, the same "best effort, never panics on
 /// untrusted input" stance `debug_http.rs`'s own body parsing already

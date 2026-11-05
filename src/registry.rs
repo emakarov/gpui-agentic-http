@@ -1,6 +1,5 @@
-//! The description of what one app module makes callable -- ported from
-//! sgerp-admin's own `debug_http::Action`/`Param`
-//! (`~/dev/sgerp-rust/desktop/crates/admin/src/debug_http.rs`), generalized
+//! The description of what one app module makes callable -- ported from a
+//! downstream gpui app's own `debug_http::Action`/`Param`, generalized
 //! with a `ParamLocation` that file never needed: every one of its params
 //! rode in a JSON body regardless of HTTP method, including on `GET`
 //! requests -- which is exactly the shape `curl -d` cannot express without
@@ -69,7 +68,7 @@ impl Action {
 /// never collide -- see this crate's own README, "Multi-module
 /// composition".
 ///
-/// `T` is the app's own state type (e.g. `AdminApp`) -- `dispatch` gets a
+/// `T` is the app's own state type (e.g. `MyApp`) -- `dispatch` gets a
 /// mutable reference to it the same way a real UI event handler would,
 /// which is deliberately as much access as a click already has. Giving a
 /// `dispatch` fn a *narrower* slice of `T` than the whole app is a
@@ -107,17 +106,16 @@ pub struct ModuleRegistration<T> {
 /// this rather than silently diverging.
 ///
 /// **Deliberately does not call `ModuleRegistration::dispatch` itself.**
-/// `dispatch` needs `&mut T`, and for a real gpui app `T` (e.g. sgerp-admin's
-/// own `AdminApp`) cannot be constructed at all outside a live window --
+/// `dispatch` needs `&mut T`, and for a real gpui app `T` (the app's own root
+/// entity) cannot be constructed at all outside a live window --
 /// this crate's own reference consumer has no `#[gpui::test]` harness, a
 /// fact confirmed directly against that codebase (multiple existing doc
 /// comments state it), not assumed. Requiring a real `T` here would make
 /// this helper unusable by the one real consumer it exists for. Instead
 /// this checks *routability* -- whether `is_routable` (a caller-supplied,
 /// `T`-independent predicate over just an action's name) recognises every
-/// declared action -- the same shape sgerp-admin's own pre-migration
-/// `parse_request`/`debug_http.rs::parse_request_tests` already proved
-/// out: a pure parsing function, with no dependency on a constructed app
+/// declared action -- the same shape that app's own pre-migration
+/// `parse_request` tests already proved out: a pure parsing function, with no dependency on a constructed app
 /// instance, is what a drift test actually needs to exercise.
 pub fn assert_registry_routable<T>(
     registration: &ModuleRegistration<T>,
@@ -217,8 +215,7 @@ mod tests {
     }
 
     /// The `is_routable` predicate a real consumer would build from their
-    /// own pure parsing function (e.g. sgerp-admin's `parse_action`, Task 7
-    /// Step 5 of the plan) -- here, a tiny stand-in that recognises only
+    /// own pure parsing function (e.g. a `parse_action`) -- here, a tiny stand-in that recognises only
     /// the two names `ACTIONS` actually declares, to prove the assertion
     /// helper itself catches a mismatch either direction.
     fn fake_is_routable(action: &Action) -> bool {

@@ -4,10 +4,8 @@ A local-only HTTP surface for driving and inspecting a gpui app without a
 human at the keyboard: open a screen, click a button, read back what's on
 screen -- as actions an agent calls over HTTP, not OS-level GUI automation.
 
-Extracted from sgerp-admin's own `debug_http.rs`
-(`~/dev/sgerp-rust/desktop/crates/admin/src/agentic_http.rs`), which is
-still the reference consumer. See `docs/2026-09-06-gpui-agentic-http-design.md`
-in that repo for the full design history.
+Used by [SWAT Maps](https://github.com/swatmobility/swat-maps) and its
+examples; any gpui app can use it alone.
 
 ## What this crate provides
 
@@ -57,8 +55,6 @@ consumer is checked out at a different depth, e.g. a plain checkout vs. a
 ```toml
 gpui-agentic-http = { path = "/absolute/path/to/gpui-agentic-http" }
 ```
-
-See sgerp-admin's own `agentic_http.rs` for a complete, real consumer.
 
 **Gotcha:** an `Action`'s own `path` must NOT repeat its module's
 `prefix` -- `AgenticServer` prepends the prefix itself when routing and
